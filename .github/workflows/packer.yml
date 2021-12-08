@@ -1,0 +1,48 @@
+on:
+  workflow_call:
+    inputs:
+      action:
+        default: "validate"
+        required: false
+        type: string
+      working-directory:
+        default: "./"
+        required: false
+        type: string
+    secrets:
+      aws_credentials_file:
+        required: true
+
+jobs:
+  packer:
+    name: Packer ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    env:
+      PACKER_ACTION: ${{ inputs.action }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set AWS credentials
+        env:
+          AWS_CREDENTIALS_FILE: ${{ secrets.AWS_CREDENTIALS_FILE }}
+        run: mkdir ~/.aws/ && echo "$AWS_CREDENTIALS_FILE" > ~/.aws/credentials
+
+      - name: Lint
+        if: env.PACKER_ACTION == 'validate'
+        run: packer fmt -check -diff .
+
+      - name: Initialise
+        run: packer init .
+
+      - name: Validate
+        if: env.PACKER_ACTION == 'validate'
+        run: packer validate .
+
+      - name: Build
+        if: env.PACKER_ACTION == 'build'
+        run: packer build .
