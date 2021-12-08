@@ -1,0 +1,122 @@
+on:
+  workflow_call:
+    inputs:
+      action:
+        default: "validate"
+        required: false
+        type: string
+      terraform_version:
+        default: "1.0.0"
+        required: false
+        type: string
+      working-directory:
+        default: "./"
+        required: false
+        type: string
+      workspaces:
+        default: '["default"]'
+        required: false
+        type: string
+    secrets:
+      aws_credentials_file:
+        required: true
+      ci_token:
+        required: false
+    outputs:
+      output:
+        description: "JSON object of Terraform output"
+        value: ${{ jobs.terraform.outputs.terraform }}
+
+jobs:
+  terraform:
+    name: Terraform ${{ inputs.action }} in ${{ matrix.workspace }} workspace
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    env:
+      TF_ACTION: ${{ inputs.action }}
+    outputs:
+      terraform: ${{ steps.output.outputs.stdout }}
+
+    strategy:
+      matrix:
+        workspace: ${{ fromJson(inputs.workspaces) }}
+      max-parallel: ${{ inputs.action == 'apply' && 1 || 10 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+
+      - name: Set AWS credentials
+        env:
+          AWS_CREDENTIALS_FILE: ${{ secrets.AWS_CREDENTIALS_FILE }}
+        run: mkdir ~/.aws/ && echo "$AWS_CREDENTIALS_FILE" > ~/.aws/credentials
+
+      - name: Set GitHub token for private terraform modules
+        env:
+          CI_TOKEN: ${{ secrets.CI_TOKEN }}
+        if: env.CI_TOKEN != null
+        run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://username:${{ secrets.CI_TOKEN }}@github.com/infinitytracking".insteadOf "https://github.com/infinitytracking"
+
+      - name: Lint
+        if: env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate'
+        run: terraform fmt -check -diff -recursive
+
+      - name: Initialise
+        run: terraform init -input=false
+
+      - name: Select workspace
+        run: terraform workspace select ${{ matrix.workspace }} || terraform workspace new ${{ matrix.workspace }}
+
+      - name: Validate
+        if: env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate'
+        run: terraform validate
+
+      - name: Plan
+        if: env.TF_ACTION == 'plan'
+        run: terraform plan -input=false -lock=false -out=out.tfplan
+
+      - name: Plan output
+        id: plan
+        if: env.TF_ACTION == 'plan'
+        run: terraform show out.tfplan -no-color
+
+      - name: Add plan output to PR
+        uses: actions/github-script@v2
+        if: github.event_name == 'pull_request' && env.TF_ACTION == 'plan'
+        continue-on-error: true
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          script: |
+            const output = `#### Workspace: \`${{ matrix.workspace }}\`
+
+            <details><summary>Show Plan Output</summary>
+
+            \`\`\`${process.env.PLAN}\`\`\`
+
+            </details>`;
+
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Apply
+        if: env.TF_ACTION == 'apply'
+        run: terraform apply -auto-approve -input=false -no-color
+
+      - name: Output
+        id: output
+        if: env.TF_ACTION == 'apply'
+        run: terraform output -json -no-color
