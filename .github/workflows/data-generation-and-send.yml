@@ -1,0 +1,15 @@
+on:
+  workflow_call:
+    inputs:
+      filename:
+        required: true
+        type: string
+      params:
+        required: true
+        type: string
+      tubename:
+        required: true
+        type: string
+    secrets:
+      ci_token:
+        required: false
