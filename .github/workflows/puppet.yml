@@ -1,0 +1,31 @@
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        default: "./"
+        required: false
+        type: string
+
+jobs:
+  puppet:
+    name: Puppet validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup puppet & puppet-lint
+        run: |
+          sudo apt install puppet
+          sudo gem install puppet-lint
+          sudo gem install puppet-lint-trailing_comma-check
+
+      - name: Lint
+        run: puppet-lint --fail-on-warnings .
+
+      - name: Validate
+        run: puppet parser validate .
