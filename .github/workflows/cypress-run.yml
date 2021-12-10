@@ -47,7 +47,6 @@ jobs:
           CYPRESS_username: ${{ secrets.CYPRESS_USERNAME }}
           CYPRESS_password: ${{ secrets.CYPRESS_PASSWORD }}
           CYPRESS_userId: ${{ secrets.CYPRESS_USERID }}
-        continue-on-error: true
       - name: Create screenshot
         if: failure()
         uses: actions/upload-artifact@v2
