@@ -34,7 +34,7 @@ jobs:
         if: env.AWS_CREDENTIALS_FILE != null
         run: mkdir ~/.aws/ && echo "$AWS_CREDENTIALS_FILE" > ~/.aws/credentials
       - name: Checkout data generator
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
         with:
           repository: infinitytracking/qa-tools
           token: ${{ secrets.CI_TOKEN }}
@@ -43,8 +43,7 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
       - name: Install packages
-        run: |
-          pip install -r data-generation/requirements.txt
+        run: pip install -r data-generation/requirements.txt
       - name: Run script
         run: |
           mkdir output
