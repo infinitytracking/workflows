@@ -1,0 +1,69 @@
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        default: '3.8'
+        required: false
+        type: string
+      script:
+        required: true
+        type: string
+      params:
+        required: true
+        type: string
+      insertname:
+        required: true
+        type: string
+      tubename:
+        required: true
+        type: string
+    secrets:
+      aws_credentials_file:
+        required: false
+      ci_token:
+        required: true
+
+jobs:
+  setup_data:
+    name: Setup data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set AWS credentials
+        env:
+          AWS_CREDENTIALS_FILE: ${{ secrets.AWS_CREDENTIALS_FILE }}
+        if: env.AWS_CREDENTIALS_FILE != null
+        run: mkdir ~/.aws/ && echo "$AWS_CREDENTIALS_FILE" > ~/.aws/credentials
+      - name: Checkout data generator
+        uses: actions/checkout@v2
+        with:
+          repository: infinitytracking/qa-tools
+          token: ${{ secrets.CI_TOKEN }}
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Install packages
+        run: pip install -r data-generation/requirements.txt
+      - name: Run script
+        run: |
+          mkdir output
+          python data-generation/${{ inputs.script }} ${{ inputs.params }} -t ${{ inputs.insertname }}
+      - name: Create artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: faux-data
+          path: output/*
+  
+  send_test_data_to_tube:
+    name: Send data to Tube
+    needs: setup_data
+    runs-on: self-hosted
+    steps:
+      - name: Download json
+        uses: actions/download-artifact@v2
+        with:
+          name: faux-data
+      - name: Copy json file and run script
+        run: |
+          scp data.json ${{ inputs.tubename }}:~
+          ssh ${{ inputs.tubename }} ~/bin/datasender -file ~/data.json
