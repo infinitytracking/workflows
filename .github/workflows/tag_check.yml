@@ -1,7 +1,7 @@
 on: workflow_call
 
 jobs:
- check_tag:
+  check_tag:
     name: Check for tag
     runs-on: ubuntu-latest
     steps:
