@@ -32,6 +32,9 @@ jobs:
           AWS_CREDENTIALS_FILE: ${{ secrets.AWS_CREDENTIALS_FILE }}
         run: mkdir ~/.aws/ && echo "$AWS_CREDENTIALS_FILE" > ~/.aws/credentials
 
+      - name: Set regional endpoint
+        run: echo "AWS_STS_REGIONAL_ENDPOINTS=regional" >> $GITHUB_ENV
+
       - name: Lint
         if: env.PACKER_ACTION == 'validate'
         run: packer fmt -check -diff .
