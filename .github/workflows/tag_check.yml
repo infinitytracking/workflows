@@ -1,0 +1,17 @@
+on: workflow_call
+
+jobs:
+ check_tag:
+    name: Check for tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: tag check
+        run: |
+          if ! git branch --remotes --contains ${{ github.ref }} | tr -d ' ' | grep '^origin/main\|origin/master$' >> /dev/null; then
+            echo "Tag not on main/master, exiting"
+            exit 1
+          fi
