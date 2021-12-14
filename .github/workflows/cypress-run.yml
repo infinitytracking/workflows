@@ -1,0 +1,61 @@
+on:
+  workflow_call:
+    inputs:
+      step:
+        required: true
+        type: string
+      files-to-move:
+        required: true
+        type: string
+      spec-file:
+        required: true
+        type: string
+    secrets:
+      ci_token:
+        required: true
+      cypress_username:
+        required: true
+      cypress_password:
+        required: true
+      cypress_userid:
+        required: true
+
+jobs:
+  run_cypress_script:
+    name: Run Cypress Script
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Download files
+        uses: actions/download-artifact@v2
+        with:
+          name: faux-data
+      - name: Move data CSV
+        run: |
+          mkdir cypress/fixtures
+          mv ${{ inputs.files-to-move }} cypress/fixtures/
+      - name: Add Auth Token
+        run:
+          echo "\n//npm.pkg.github.com/:_authToken=${{ secrets.CI_TOKEN }}" >> .npmrc
+      - name: Run cypress
+        uses: cypress-io/github-action@v2
+        with:
+          browser: chrome
+          spec: cypress/integration/${{ inputs.spec-file }}
+        env:
+          CYPRESS_username: ${{ secrets.CYPRESS_USERNAME }}
+          CYPRESS_password: ${{ secrets.CYPRESS_PASSWORD }}
+          CYPRESS_userId: ${{ secrets.CYPRESS_USERID }}
+      - name: Create screenshot
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-screenshot-${{ inputs.step }}
+          path: cypress/screenshots
+      - name: Create artifact
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-video-${{ inputs.step }}
+          path: cypress/videos
