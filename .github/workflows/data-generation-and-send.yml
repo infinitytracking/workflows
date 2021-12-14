@@ -53,7 +53,7 @@ jobs:
         with:
           name: faux-data
           path: output/*
-  
+
   send_test_data_to_tube:
     name: Send data to Tube
     needs: setup_data
