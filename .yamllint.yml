@@ -1,0 +1,9 @@
+---
+extends: default
+
+rules:
+  document-start: disable
+  line-length: disable
+  truthy:
+    # allows GitHub Action 'on:' to not error
+    allowed-values: ["true", "false", "on"]
