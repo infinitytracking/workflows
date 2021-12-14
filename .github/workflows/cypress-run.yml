@@ -37,7 +37,7 @@ jobs:
           mv ${{ inputs.files-to-move }} cypress/fixtures/
       - name: Add Auth Token
         run:
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.CI_TOKEN }}" >> .npmrc
+          echo "\n//npm.pkg.github.com/:_authToken=${{ secrets.CI_TOKEN }}" >> .npmrc
       - name: Run cypress
         uses: cypress-io/github-action@v2
         with:
