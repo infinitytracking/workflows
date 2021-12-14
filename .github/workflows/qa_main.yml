@@ -1,6 +1,5 @@
-name: Qa Main workflow
 on:
-  push:
+  workflow_call:
     tags:
       - "*"
 
