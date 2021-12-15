@@ -30,8 +30,9 @@ jobs:
       - name: Del package-lock
         run: rm package-lock.json
       - name: Add Auth Token
-        run:
-          echo "\n//npm.pkg.github.com/:_authToken=${{ secrets.CI_TOKEN }}" >> .npmrc
+        run: echo "\n//npm.pkg.github.com/:_authToken=${{ secrets.CI_TOKEN }}" >> .npmrc
+      - name: Test
+        run: cat .npmrc
       - name: Node
         uses: actions/setup-node@v2
         with:
