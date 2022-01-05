@@ -1,0 +1,115 @@
+on:
+  workflow_call:
+    inputs:
+      action:
+        default: "test"
+        required: false
+        type: string
+      cloudfront_distribution_id:
+        default: ""
+        required: false
+        type: string
+      node_version:
+        default: ""
+        required: false
+        type: string
+      s3_bucket:
+        default: ""
+        required: false
+        type: string
+      working-directory:
+        default: "./"
+        required: false
+        type: string
+    secrets:
+      aws_credentials_file:
+        required: false
+      ci_token:
+        required: false
+
+jobs:
+  node:
+    name: Node ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    env:
+      NODE_ACTION: ${{ inputs.action }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Verify inputs
+        env:
+          S3_BUCKET: ${{ inputs.s3_bucket }}
+        if: env.NODE_ACTION == 'deploy'
+        run: |
+          if [[ -z $S3_BUCKET ]]; then
+            echo "::error::S3 bucket input required for deploy action" && exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Setup cache
+        uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Set AWS credentials
+        env:
+          AWS_CREDENTIALS_FILE: ${{ secrets.AWS_CREDENTIALS_FILE }}
+        if: env.AWS_CREDENTIALS_FILE != null
+        run: mkdir ~/.aws/ && echo "$AWS_CREDENTIALS_FILE" > ~/.aws/credentials
+
+      - name: Set GitHub token for private terraform modules
+        env:
+          CI_TOKEN: ${{ secrets.CI_TOKEN }}
+        if: env.CI_TOKEN != null
+        run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://username:${{ secrets.CI_TOKEN }}@github.com/infinitytracking".insteadOf "https://github.com/infinitytracking"
+
+      - name: Install
+        run: yarn install
+
+      - name: Lint
+        if: env.NODE_ACTION == 'test'
+        run: yarn lint --no-fix
+
+      - name: Unit Test
+        if: env.NODE_ACTION == 'test'
+        run: yarn test:unit
+
+      - name: Determine environment
+        id: environment
+        if: env.NODE_ACTION == 'deploy'
+        run: |
+          if [[ $GITHUB_REF == "refs/tags/"* ]]; then
+            echo "::set-output name=environment::production"
+          elif [[ $GITHUB_REF == "refs/heads/main" || $GITHUB_REF == "refs/heads/master" ]]; then
+            echo "::set-output name=environment::staging"
+          else
+            echo "::set-output name=environment::dev"
+          fi
+
+      - name: Build
+        if: env.NODE_ACTION == 'build' || env.NODE_ACTION == 'deploy'
+        run: yarn build --mode ${{ steps.environment.outputs.environment }}
+
+      - name: Deploy
+        if: env.NODE_ACTION == 'deploy'
+        run: |
+          aws s3 sync ../app/dist s3://${{ inputs.s3_bucket }} --delete --profile ${{ steps.environment.outputs.environment }}
+          aws s3 cp s3://${{ inputs.s3_bucket }}/ s3://${{ inputs.s3_bucket }}/ --exclude "*" --include "files.json" --recursive --metadata-directive REPLACE --cache-control no-store,max-age=0 --profile ${{ steps.environment.outputs.environment }}
+
+      - name: Invalidate CloudFront cache
+        env:
+          CF_ID: ${{ inputs.cloudfront_distribution_id }}
+        if: env.NODE_ACTION == 'deploy' && env.CF_ID != null
+        run: aws cloudfront create-invalidation --distribution-id ${{ inputs.cloudfront_distribution_id }} --paths "/*" --profile ${{ steps.environment.outputs.environment }}
