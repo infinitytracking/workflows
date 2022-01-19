@@ -53,6 +53,7 @@ jobs:
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: ${{ inputs.terraform_version }}
+          terraform_wrapper: ${{ inputs.action == 'plan' && 'false' || 'true' }}
 
       - name: Set AWS credentials
         env:
@@ -88,21 +89,27 @@ jobs:
       - name: Plan output
         id: plan
         if: env.TF_ACTION == 'plan'
-        run: terraform show out.tfplan -no-color
+        run: |
+          OUTPUT=$(terraform show out.tfplan -no-color | sed -n '1h;1!H;${;g;s/Terraform detected the following changes made outside of Terraform.*actions to undo or respond to these changes\.//;p;}')
+          OUTPUT="${OUTPUT//'%'/'%25'}"
+          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          echo "::set-output name=output::$OUTPUT"
 
       - name: Add plan output to PR
         uses: actions/github-script@v2
         if: github.event_name == 'pull_request' && env.TF_ACTION == 'plan'
         continue-on-error: true
         env:
-          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+          PLAN: "terraform\n${{ steps.plan.outputs.output }}"
         with:
           script: |
             const output = `#### Workspace: \`${{ matrix.workspace }}\`
 
             <details><summary>Show Plan Output</summary>
 
-            \`\`\`${process.env.PLAN}\`\`\`
+            \`\`\`${process.env.PLAN}
+            \`\`\`
 
             </details>`;
 
