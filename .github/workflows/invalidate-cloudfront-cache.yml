@@ -1,0 +1,29 @@
+on:
+  workflow_call:
+    inputs:
+      cloudfront-distribution-id:
+        required: true
+        type: string
+      deploy-env:
+        required: true
+        type: string
+    secrets:
+      aws_credentials_file:
+        required: true
+
+jobs:
+  invalidate_cloudfront_cache:
+    name: Invalidate CloudFront Cache
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set AWS credentials
+        env:
+          AWS_CREDENTIALS_FILE: ${{ secrets.AWS_CREDENTIALS_FILE }}
+        run: mkdir ~/.aws/ && echo "$AWS_CREDENTIALS_FILE" > ~/.aws/credentials
+
+      - name: Invalidate Cache
+        env:
+          CF_ID: ${{ inputs.cloudfront-distribution-id }}
+          DEPLOY_ENV: ${{ inputs.deploy-env }}
+        run: aws cloudfront create-invalidation --distribution-id $CF_ID --paths "/*" --profile $DEPLOY_ENV
