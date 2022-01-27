@@ -78,7 +78,7 @@ jobs:
 
       - name: Checkov
         env:
-          SAT: ${{ fromJson(inputs.static_analysis_tool) }}
+          SAT: ${{ inputs.static_analysis_tool }}
         if: env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate' && env.SAT == 'checkov'
         run: |
           pip3 install checkov
