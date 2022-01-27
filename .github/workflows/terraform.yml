@@ -10,7 +10,7 @@ on:
         required: false
         type: string
       static_analysis_tool:
-        default: none
+        default: '["none"]'
         required: false
         type: string
       working-directory:
