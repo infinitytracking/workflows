@@ -82,7 +82,7 @@ jobs:
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && contains( ${{ fromJson(env.SAT) }}, 'checkov')
         run: |
           pip3 install checkov
-          checkov -d .
+          checkov -s -d .
 
       - name: tfsec
         env:
@@ -90,7 +90,7 @@ jobs:
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && contains( ${{ fromJson(env.SAT) }}, 'tfsec')
         run: |
           brew install tfsec
-          tfsec .
+          tfsec -s .
 
       - name: Initialise
         run: terraform init -input=false
