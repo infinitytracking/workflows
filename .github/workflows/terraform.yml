@@ -82,7 +82,7 @@ jobs:
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && ( ${{ fromJson(env.SAT) }} == 'checkov')
         run: |
           pip3 install checkov
-          checkov -s -d .
+          checkov --quiet --compact -s -d .
 
       - name: tfsec
         env:
