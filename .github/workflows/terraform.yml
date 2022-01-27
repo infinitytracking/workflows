@@ -87,7 +87,7 @@ jobs:
       - name: tfsec
         env:
           SAT: ${{ inputs.static_analysis_tool }}
-        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') & contains(env.SAT), 'tfsec')
+        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') & contains(env.SAT, 'tfsec')
         run: |
           brew install tfsec
           tfsec -s .
