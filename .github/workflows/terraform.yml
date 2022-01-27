@@ -78,16 +78,16 @@ jobs:
 
       - name: Checkov
         env:
-          SAT: inputs.static_analysis_tool
-        if: env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate' && env.SAT == 'checkov'
+          SAT: ${{ inputs.static_analysis_tool }}
+        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && env.SAT == 'checkov'
         run: |
           pip3 install checkov
           checkov -s -d .
 
       - name: tfsec
         env:
-          SAT: inputs.static_analysis_tool
-        if: env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate' && env.SAT == 'tfsec'
+          SAT: ${{ inputs.static_analysis_tool }}
+        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && env.SAT == 'tfsec'
         run: |
           brew install tfsec
           tfsec -s .
