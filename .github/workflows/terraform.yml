@@ -9,6 +9,11 @@ on:
         default: "1.0.0"
         required: false
         type: string
+      static_analysis_tool:
+        default: none
+        default: '["checkov","tfsec","tflint"]'
+        required: false
+        type: string
       working-directory:
         default: "./"
         required: false
@@ -71,6 +76,22 @@ jobs:
       - name: Lint
         if: env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate'
         run: terraform fmt -check -diff -recursive
+
+      - name: Checkov
+        env:
+          SAT: ${{ input.static_analysis_tool }}
+        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && contains( ${{ fromJson(env.SAT) }}, 'checkov')
+        run: |
+          pip3 install checkov
+          checkov -d .
+
+      - name: tfsec
+        env:
+          SAT: ${{ input.static_analysis_tool }}
+        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && (env.SAT == 'both' || env.SAT == 'tfsec')
+        run: |
+          brew install tfsec
+          tfsec .
 
       - name: Initialise
         run: terraform init -input=false
