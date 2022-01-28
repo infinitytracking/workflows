@@ -55,13 +55,11 @@ jobs:
         run: |
           mkdir cypress/fixtures
           mv ${{ inputs.files-to-move }} cypress/fixtures/
-      # - name: Set Cypress env variables
-      #   run: |
       - name: Install packages
         run: |
           rm -f package-lock.json
           npm install
-      - name: Spin up feature branch and run UI Tests
+      - name: Set env, spin up feature branch and run UI Tests
         run: |
           export CYPRESS_USERNAME=${{ secrets.CYPRESS_USERNAME }} && export CYPRESS_PASSWORD=${{ secrets.CYPRESS_PASSWORD }} && export CYPRESS_USERID=${{ secrets.CYPRESS_USERID }} && export FEATURE_ENV=${{ inputs.feature-env }} && export FEATURE_ADDRESS=${{ inputs.feature-address }}
           export SPEC_FILE=${{ inputs.spec-file }}
@@ -70,7 +68,6 @@ jobs:
           cat <<< $(jq '.env.userId='\"$CYPRESS_USERID\" cypress.json) > cypress.json
           cat <<< $(jq '.env.featureEnv='\"$FEATURE_ENV\" cypress.json) > cypress.json
           cat <<< $(jq '.env.featureAddress='\"$FEATURE_ADDRESS\" cypress.json) > cypress.json
-          cat cypress.json
           npm run ci
       - name: Create screenshot
         if: failure()
