@@ -42,7 +42,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: ${{ input.node-version }}
+          node-version: ${{ inputs.node-version }}
       - name: Set GitHub Token for private repository access
         run: |
           git config --local --remove-section http."https://github.com/"
