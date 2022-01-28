@@ -16,6 +16,10 @@ on:
       feature-env:
         required: true
         type: string
+      node-version:
+        required: false
+        type: string
+        default: '12'
     secrets:
       ci_token:
         required: true
@@ -38,7 +42,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: '12'
+          node-version: ${{ input.node-version }}
       - name: Set GitHub Token for private repository access
         run: |
           git config --local --remove-section http."https://github.com/"
