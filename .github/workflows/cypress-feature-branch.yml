@@ -70,6 +70,7 @@ jobs:
           cat <<< $(jq '.env.userId='\"$CYPRESS_USERID\" cypress.json) > cypress.json
           cat <<< $(jq '.env.featureEnv='\"$FEATURE_ENV\" cypress.json) > cypress.json
           cat <<< $(jq '.env.featureAddress='\"$FEATURE_ADDRESS\" cypress.json) > cypress.json
+          cat cypress.json
           npm run ci
       - name: Create screenshot
         if: failure()
