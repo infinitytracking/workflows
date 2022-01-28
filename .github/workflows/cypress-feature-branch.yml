@@ -1,0 +1,87 @@
+on:
+  workflow_call:
+    inputs:
+      step:
+        required: true
+        type: string
+      files-to-move:
+        required: true
+        type: string
+      spec-file:
+        required: true
+        type: string
+      feature-address:
+        required: true
+        type: string
+      feature-env:
+        required: true
+        type: string
+      node-version:
+        required: false
+        type: string
+        default: '12'
+    secrets:
+      ci_token:
+        required: true
+      cypress_username:
+        required: true
+      cypress_password:
+        required: true
+      cypress_userid:
+        required: true
+
+jobs:
+  cypress_test_feature_branch:
+    name: Feature Branch Cypress Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Add Auth Token
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.CI_TOKEN }}" >> .npmrc
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ input.node-version }}
+      - name: Set GitHub Token for private repository access
+        run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://username:${{ secrets.CI_TOKEN }}@github.com/infinitytracking".insteadOf "https://github.com/infinitytracking"
+      - name: Install feature branch
+        run: |
+          cd app
+          yarn install
+      - name: Download call files
+        uses: actions/download-artifact@v2
+        with:
+          name: faux-data
+      - name: Move data CSV
+        run: |
+          mkdir cypress/fixtures
+          mv ${{ inputs.files-to-move }} cypress/fixtures/
+      - name: Install packages
+        run: |
+          rm -f package-lock.json
+          npm install
+      - name: Set env, spin up feature branch and run UI Tests
+        run: |
+          export CYPRESS_USERNAME=${{ secrets.CYPRESS_USERNAME }} && export CYPRESS_PASSWORD=${{ secrets.CYPRESS_PASSWORD }} && export CYPRESS_USERID=${{ secrets.CYPRESS_USERID }} && export FEATURE_ENV=${{ inputs.feature-env }} && export FEATURE_ADDRESS=${{ inputs.feature-address }}
+          export SPEC_FILE=${{ inputs.spec-file }}
+          cat <<< $(jq '.env.username='\"$CYPRESS_USERNAME\" cypress.json) > cypress.json
+          cat <<< $(jq '.env.password='\"$CYPRESS_PASSWORD\" cypress.json) > cypress.json
+          cat <<< $(jq '.env.userId='\"$CYPRESS_USERID\" cypress.json) > cypress.json
+          cat <<< $(jq '.env.featureEnv='\"$FEATURE_ENV\" cypress.json) > cypress.json
+          cat <<< $(jq '.env.featureAddress='\"$FEATURE_ADDRESS\" cypress.json) > cypress.json
+          npm run ci
+      - name: Create screenshot
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-screenshot-${{ inputs.step }}
+          path: cypress/screenshots
+      - name: Create artifact
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-video-${{ inputs.step }}
+          path: cypress/videos
