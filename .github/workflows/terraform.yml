@@ -90,7 +90,7 @@ jobs:
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && contains(env.SAT, 'tfsec')
         run: |
           brew install tfsec
-          tfsec -s .
+          tfsec -s --sort-severity --gif .
 
       - name: Initialise
         run: terraform init -input=false
