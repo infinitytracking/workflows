@@ -22,6 +22,8 @@ on:
         required: false
       ci_token:
         required: true
+      datasender_api_key:
+        required: false
 
 jobs:
   setup_data:
@@ -44,26 +46,18 @@ jobs:
           python-version: ${{ inputs.python-version }}
       - name: Install packages
         run: pip install -r data-generation/requirements.txt
+      - name: Write config file
+        run: |
+          export APIKEY=${{ secrets.DATASENDER_API_KEY }}
+          export JSON='{"apiKey": '\"$APIKEY\"'}'
+          echo $JSON > config.dev.json
+          cat config.dev.json
       - name: Run script
         run: |
           mkdir output
-          python data-generation/${{ inputs.script }} ${{ inputs.params }} -t ${{ inputs.insertname }}
+          python data-generation/${{ inputs.script }} ${{ inputs.params }} -t ${{ inputs.insertname }} -s
       - name: Create artifact
         uses: actions/upload-artifact@v2
         with:
           name: faux-data
           path: output/*
-
-  send_test_data_to_tube:
-    name: Send data to Tube
-    needs: setup_data
-    runs-on: self-hosted
-    steps:
-      - name: Download json
-        uses: actions/download-artifact@v2
-        with:
-          name: faux-data
-      - name: Copy json file and run script
-        run: |
-          scp data.json ${{ inputs.tubename }}:~
-          ssh ${{ inputs.tubename }} ~/bin/datasender -file ~/data.json
