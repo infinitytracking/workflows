@@ -14,9 +14,6 @@ on:
       insertname:
         required: true
         type: string
-      tubename:
-        required: true
-        type: string
     secrets:
       aws_credentials_file:
         required: false
