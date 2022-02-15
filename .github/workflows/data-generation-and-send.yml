@@ -23,7 +23,7 @@ on:
       ci_token:
         required: true
       datasender_api_key:
-        required: false
+        required: true
 
 jobs:
   setup_data:
