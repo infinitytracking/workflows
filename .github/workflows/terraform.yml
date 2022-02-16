@@ -155,14 +155,14 @@ jobs:
 
       - name: Generate Infracost JSON
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && env.INFRACOST == 'true'
-        run: infracost breakdown --path out.tfplan --format json --out-file /tmp/infracost.json
+        run: infracost breakdown --path out.tfplan --format json --out-file /tmp/infracost-${{ matrix.workspace }}.json
         working-directory: ${{ inputs.working-directory }}
 
       - name: Post Infracost comment
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && env.INFRACOST == 'true'
         uses: infracost/actions/comment@v1
         with:
-          path: /tmp/infracost.json
+          path: /tmp/infracost-*.json
           behavior: update              
 
       - name: Apply
