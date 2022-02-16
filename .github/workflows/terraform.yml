@@ -157,6 +157,8 @@ jobs:
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && env.INFRACOST == 'true'
         run: infracost breakdown --path out.tfplan --format json --out-file /tmp/infracost-${{ matrix.workspace }}.json
         working-directory: ${{ inputs.working-directory }}
+        env:
+          INFRACOST_TERRAFORM_WORKSPACE: ${{ matrix.workspace }}
 
       - name: Post Infracost comment
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && env.INFRACOST == 'true'
