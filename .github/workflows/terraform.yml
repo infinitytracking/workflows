@@ -5,6 +5,10 @@ on:
         default: "validate"
         required: false
         type: string
+      infracost:
+        default: false
+        required: false
+        type: boolean
       terraform_version:
         default: "1.0.0"
         required: false
@@ -26,6 +30,8 @@ on:
         required: true
       ci_token:
         required: false
+      infracost_api_key:
+        required: false
     outputs:
       output:
         description: "JSON object of Terraform output"
@@ -39,6 +45,7 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     env:
+      INFRACOST: ${{ inputs.infracost }}
       TF_ACTION: ${{ inputs.action }}
     outputs:
       terraform: ${{ steps.output.outputs.stdout }}
@@ -139,6 +146,24 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
+
+      - name: Setup Infracost
+        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && env.INFRACOST == "true"
+        uses: infracost/actions/setup@v1
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Generate Infracost JSON
+        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && env.INFRACOST == "true"
+        run: infracost breakdown --path out.tfplan --format json --out-file /tmp/infracost.json
+        working-directory: ${{ inputs.working-directory }}
+
+      - name: Post Infracost comment
+        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && env.INFRACOST == "true"
+        uses: infracost/actions/comment@v1
+        with:
+          path: /tmp/infracost.json
+          behavior: update              
 
       - name: Apply
         if: env.TF_ACTION == 'apply'
