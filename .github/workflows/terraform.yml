@@ -162,8 +162,9 @@ jobs:
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && env.INFRACOST == 'true'
         uses: infracost/actions/comment@v1
         with:
-          path: "/tmp/infracost-*.json"
-          behavior: update              
+          path: /tmp/infracost-${{ matrix.workspace }}.json
+          behavior: update
+          tag: ${{ matrix.workspace }}
 
       - name: Apply
         if: env.TF_ACTION == 'apply'
