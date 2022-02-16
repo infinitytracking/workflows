@@ -162,7 +162,7 @@ jobs:
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && env.INFRACOST == 'true'
         uses: infracost/actions/comment@v1
         with:
-          path: /tmp/infracost-*.json
+          path: "/tmp/infracost-*.json"
           behavior: update              
 
       - name: Apply
