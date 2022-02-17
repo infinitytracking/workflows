@@ -41,7 +41,7 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     env:
-      INFRACOST: ${{ inputs.infracost }}
+      SAT: ${{ inputs.static_analysis_tool }}
       TF_ACTION: ${{ inputs.action }}
     outputs:
       terraform: ${{ steps.output.outputs.stdout }}
@@ -80,16 +80,12 @@ jobs:
         run: terraform fmt -check -diff -recursive
 
       - name: Checkov
-        env:
-          SAT: ${{ inputs.static_analysis_tool }}
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && contains(env.SAT, 'checkov')
         run: |
           pip3 install checkov
           checkov --quiet --compact -s -d .
 
       - name: tfsec
-        env:
-          SAT: ${{ inputs.static_analysis_tool }}
         if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && contains(env.SAT, 'tfsec')
         run: |
           brew install tfsec
