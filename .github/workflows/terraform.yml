@@ -140,20 +140,20 @@ jobs:
             })
 
       - name: Setup Infracost
-        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && contains(env.SAT, 'infracost')
+        if: env.TF_ACTION == 'plan' && contains(env.SAT, 'infracost')
         uses: infracost/actions/setup@v1
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
       - name: Generate Infracost JSON
-        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && contains(env.SAT, 'infracost')
+        if: env.TF_ACTION == 'plan' && contains(env.SAT, 'infracost')
         run: infracost breakdown --path out.tfplan --format json --out-file /tmp/infracost.json
         working-directory: ${{ inputs.working-directory }}
         env:
           INFRACOST_TERRAFORM_WORKSPACE: ${{ matrix.workspace }}
 
       - name: Post Infracost comment
-        if: (env.TF_ACTION == 'plan' || env.TF_ACTION == 'validate') && contains(env.SAT, 'infracost')
+        if: env.TF_ACTION == 'plan' && contains(env.SAT, 'infracost')
         uses: infracost/actions/comment@v1
         with:
           path: /tmp/infracost.json
