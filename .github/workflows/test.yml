@@ -1,0 +1,17 @@
+name: Terraform version check
+
+on: push
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Test
+        run: |
+        sh scripts/terraform_version_checker.sh
+        git diff .github/workflows/terraform.yml
