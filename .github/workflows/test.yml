@@ -13,5 +13,5 @@ jobs:
 
       - name: Test
         run: |
-        sh scripts/terraform_version_checker.sh
-        git diff .github/workflows/terraform.yml
+          sh scripts/terraform_version_checker.sh
+          git diff .github/workflows/terraform.yml
