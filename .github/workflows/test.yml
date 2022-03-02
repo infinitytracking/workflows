@@ -11,7 +11,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Test
+      - name: Update Terraform
+        id: update
         run: |
           bash scripts/terraform_version_checker.sh
-          git diff .github/workflows/terraform.yml
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          author: InfinityGitHubActions <githubactions@infinity.co>
+          commit-message: Bump Terraform
+          committer: InfinityGitHubActions <githubactions@infinity.co>
+          reviewers: |
+            JCradock
+          title: Bump Terraform from ${{ steps.update.outputs.EXISTING_VERSION }} to ${{ steps.update.outputs.LATEST_VERSION }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: >
+            This PR is auto-generated.
+            ${{ steps.update.outputs.RELEASE }}
