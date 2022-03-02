@@ -24,8 +24,8 @@ jobs:
           committer: InfinityGitHubActions <githubactions@infinity.co>
           reviewers: |
             JCradock
-          title: Bump Terraform from ${{ steps.update.outputs.EXISTING_VERSION }} to ${{ steps.update.outputs.LATEST_VERSION }}"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Bump Terraform from ${{ steps.update.outputs.EXISTING_VERSION }} to ${{ steps.update.outputs.LATEST_VERSION }}
+          token: ${{ secrets.CI_TOKEN }}
           body: >
             This PR is auto-generated.
             ${{ steps.update.outputs.RELEASE }}
