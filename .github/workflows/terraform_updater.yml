@@ -1,0 +1,39 @@
+name: Terraform version check
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"  # Every Monday at 09:00
+
+jobs:
+  terraform_version_check:
+    name: Check Terraform for update
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Check for update
+        id: update
+        run: bash scripts/terraform_version_checker.sh
+
+      - name: Create pull request if changes present
+        uses: peter-evans/create-pull-request@v3
+        with:
+          author: InfinityGitHubActions <githubactions@infinity.co>
+          base: main
+          branch: workflows/terraform/update-${{ steps.update.outputs.LATEST_VERSION }}
+          commit-message: Bump Terraform
+          committer: InfinityGitHubActions <githubactions@infinity.co>
+          team-reviewers: Platform
+          title: Bump Terraform from ${{ steps.update.outputs.EXISTING_VERSION }} to ${{ steps.update.outputs.LATEST_VERSION }}
+          token: ${{ secrets.CI_TOKEN }}
+          body: |
+            Bumps Terraform version in [.github/workflows/terraform.yml](.github/workflows/terraform.yml) from ${{ steps.update.outputs.EXISTING_VERSION }} to ${{ steps.update.outputs.LATEST_VERSION }}.
+
+            <details>
+              <summary>Release notes</summary>
+              From <a href="${{ steps.update.outputs.RELEASE_URL }}">${{ steps.update.outputs.RELEASE_URL }}</a>.
+
+              ${{ steps.update.outputs.RELEASE_NOTES }}
+            </details>
