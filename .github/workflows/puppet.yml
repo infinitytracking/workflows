@@ -24,7 +24,10 @@ jobs:
           sudo gem install puppet-lint
           sudo gem install puppet-lint-trailing_comma-check
 
-      - name: Lint
+      - name: Lint hiera yaml
+        run: find . -path "*/data/*" -name "*.yaml" -exec  yamllint -d "{extends: default, rules: {line-length: disable}}" --format github {} \;
+
+      - name: Lint puppet
         run: puppet-lint --fail-on-warnings .
 
       - name: Validate
