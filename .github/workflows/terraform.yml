@@ -6,7 +6,7 @@ on:
         required: false
         type: string
       terraform_version:
-        default: "1.2.3"
+        default: "1.2.4"
         required: false
         type: string
       static_analysis_tool:
