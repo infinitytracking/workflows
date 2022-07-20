@@ -76,7 +76,7 @@ jobs:
           git config --global url."https://username:${{ secrets.CI_TOKEN }}@github.com/infinitytracking".insteadOf "https://github.com/infinitytracking"
 
       - name: Install
-        run: yarn install
+        run: yarn install --frozen-lockfile
 
       - name: Lint
         if: env.NODE_ACTION == 'test'
