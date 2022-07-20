@@ -1,0 +1,76 @@
+on:
+  workflow_call:
+    inputs:
+      languages:
+        default: '["none"]'
+        required: false
+        type: string
+      sources:
+        default: "."
+        required: false
+        type: string
+      tests:
+        default: "."
+        required: false
+        type: string
+    secrets:
+      sonarqube_token:
+        required: true
+
+jobs:
+  sonarqube:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    env:
+      LANGUAGES: ${{ inputs.languages }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get repository name
+        id: get-repo-name
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const repository = process.env.GITHUB_REPOSITORY;
+            const repositoryName = repository.split('/')[1]
+            core.setOutput('repositoryName', repositoryName)
+
+      - name: Set SonarQube properties
+        run: |
+          echo "sonar.projectKey=${{ steps.get-repo-name.outputs.repositoryName }}" > sonar-project.properties
+          echo "sonar.sources=${{ inputs.sources }}" >> sonar-project.properties
+          if [[ $LANGUAGES != '["none"]' ]]; then
+            echo "sonar.tests=${{ inputs.tests }}" >> sonar-project.properties
+          fi
+
+      - name: Set GitHub token for private terraform modules
+        run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://username:${{ secrets.CI_TOKEN }}@github.com/infinitytracking".insteadOf "https://github.com/infinitytracking"
+
+      - name: Get Go version
+        id: go-version
+        if: contains(env.LANGUAGES, 'go')
+        run: echo "::set-output name=version::$(grep '^go' go.mod | awk '{print $2}')"
+
+      - name: Setup Go
+        if: contains(env.LANGUAGES, 'go')
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ steps.go-version.outputs.version }}
+
+      - name: Go test and code coverage
+        if: contains(env.LANGUAGES, 'go')
+        run: |
+          echo "sonar.test.inclusions=**/*_test.go" >> sonar-project.properties
+          go test ./... -coverprofile=coverage.out -json > report.json
+
+      - name: SonarQube scan
+        uses: sonarsource/sonarqube-scan-action@v1.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+          SONAR_HOST_URL: https://sonar.ictnw.net
